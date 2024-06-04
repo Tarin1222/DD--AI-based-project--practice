@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Generator</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #030202;
+        }
+        .container {
+            text-align: center;
+            background: #070303;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .prompt-field {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .generate-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #eb2828;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .generate-button:hover {
+            background-color: #df8d8d;
+        }
+        .result {
+            margin-top: 20px;
+            color: white;
+        }
+        .result img {
+            max-width: 100%;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="prompt" class="prompt-field" placeholder="Enter your prompt here">
+        <button class="generate-button" onclick="generate()">Generate</button>
+        <div class="result" id="result"></div>
+        <div class="result" id="result2"></div>
+    </div>
+
+    <script>
+        async function generate() {
+            const promptText = document.getElementById('prompt').value;
+            const prompt = {
+                "prompt": promptText,
+                "samples": 2
+            };
+
+            console.log('Prompt:', promptText);
+
+            if (promptText) {
+                try {
+                    const response = await fetch('http://localhost:8080/stableDiffussion/textToImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(prompt)
+                    });
+
+                    console.log('Response status:', response.status);
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    console.log('Response data:', data);
+
+                    // Check if the status is 'failed'
+                    if (data.status === 'failed') {
+                        console.error('Generation failed:', data.message || 'Unknown error');
+                        document.getElementById('result').innerHTML = `<p>Generation failed: ${data.message || 'Unknown error'}</p>`;
+                        return;
+                    }
+
+                    // Extract the image URL from the array
+                    const imageUrl = data.output[0];
+                    console.log(data.output);
+                    const imageUrl1 = data.output[1];
+                    console.log(data.output);  // Extract the first URL from the array
+                    console.log('Image URL:', imageUrl);
+
+                    if (imageUrl) {
+                        document.getElementById('result').innerHTML = `<img src="${imageUrl}" alt="Generated Image">`;
+                        document.getElementById('result2').innerHTML = `<img src="${imageUrl1}" alt="Generated Image">`;
+                    } else {
+                        document.getElementById('result').innerHTML = '<p>No image generated. Please try again.</p>';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    document.getElementById('result').innerHTML = '<p>Error generating image. Please try again.</p>';
+                }
+            } else {
+                alert('Please enter a prompt.');
+            }
+        }
+    </script>
+</body>
+</html>
